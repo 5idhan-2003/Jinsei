@@ -9,29 +9,39 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
@@ -40,14 +50,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
@@ -56,8 +69,19 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MaterialTheme(colorScheme = darkColorScheme()) {
-                Surface(modifier = Modifier.fillMaxSize()) { App() }
+            MaterialTheme(
+                colorScheme = darkColorScheme(
+                    background = Color(0xFF0A0A0C),
+                    surface = Color(0xFF141416),
+                    primary = Color(0xFFFF5B35)
+                )
+            ) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = Color(0xFF0A0A0C)
+                ) {
+                    App()
+                }
             }
         }
     }
@@ -91,8 +115,8 @@ fun App() {
             val e = parseDate(cfg.goalEnd)
             when {
                 cfg.goalTitle.isBlank() -> "Goal title is required"
-                s == null || e == null -> "Enter valid dates"
-                !e.isAfter(s) -> "Deadline must be after the start date"
+                s == null || e == null -> "Enter valid dates (YYYY-MM-DD)"
+                !e.isAfter(s) -> "Deadline must be after start date"
                 else -> null
             }
         }
@@ -107,167 +131,322 @@ fun App() {
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(horizontal = 20.dp, vertical = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        Text("Jinsei", style = MaterialTheme.typography.headlineMedium)
+        // Header
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                "Jinsei",
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = (-0.5).sp
+                ),
+                color = Color.White
+            )
+            Text(
+                "Minimalist dot wallpaper for OnePlus 13s",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color(0xFF8E8E93)
+            )
+        }
 
-        TabRow(selectedTabIndex = cfg.mode.ordinal) {
+        // Tabs
+        TabRow(
+            selectedTabIndex = cfg.mode.ordinal,
+            containerColor = Color(0xFF141417),
+            contentColor = Color.White,
+            indicator = { tabPositions ->
+                TabRowDefaults.SecondaryIndicator(
+                    modifier = Modifier.tabIndicatorOffset(tabPositions[cfg.mode.ordinal]),
+                    color = Color(cfg.accent)
+                )
+            },
+            modifier = Modifier.clip(RoundedCornerShape(12.dp))
+        ) {
             Mode.values().forEach { m ->
                 Tab(
                     selected = cfg.mode == m,
                     onClick = { update(cfg.copy(mode = m)) },
-                    text = { Text(m.label) }
+                    text = {
+                        Text(
+                            m.label,
+                            fontWeight = if (cfg.mode == m) FontWeight.SemiBold else FontWeight.Normal,
+                            color = if (cfg.mode == m) Color.White else Color(0xFF8E8E93)
+                        )
+                    }
                 )
             }
         }
 
-        preview?.let {
-            Image(
-                bitmap = it.asImageBitmap(),
-                contentDescription = "Wallpaper preview",
-                contentScale = ContentScale.Fit,
+        // Compact, elegant Preview Frame (centered, 220dp height instead of 420dp)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(Color(0xFF111114))
+                .padding(vertical = 12.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            preview?.let {
+                Image(
+                    bitmap = it.asImageBitmap(),
+                    contentDescription = "Wallpaper preview",
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .height(220.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .border(1.dp, Color(0xFF26262B), RoundedCornerShape(14.dp))
+                )
+            }
+        }
+
+        // Configuration Card
+        Card(
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF141418)),
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                when (cfg.mode) {
+                    Mode.LIFE -> {
+                        DateInputRow("Date of birth", cfg.dob) { update(cfg.copy(dob = it)) }
+                        CompactField(
+                            label = "Lifespan (years)",
+                            value = cfg.lifespan.toString(),
+                            maxLen = 3
+                        ) { v -> v.toIntOrNull()?.let { update(cfg.copy(lifespan = it.coerceIn(1, 120))) } }
+                    }
+                    Mode.YEAR -> {
+                        CompactField(
+                            label = "Year (leave blank for current)",
+                            value = if (cfg.year == 0) "" else cfg.year.toString(),
+                            placeholder = LocalDate.now().year.toString(),
+                            maxLen = 4
+                        ) { v -> update(cfg.copy(year = v.toIntOrNull() ?: 0)) }
+                    }
+                    Mode.GOAL -> {
+                        OutlinedTextField(
+                            value = cfg.goalTitle,
+                            onValueChange = { update(cfg.copy(goalTitle = it)) },
+                            label = { Text("Goal Title") },
+                            placeholder = { Text("e.g. metamorphosis") },
+                            singleLine = true,
+                            isError = cfg.goalTitle.isBlank(),
+                            colors = customFieldColors(),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        DateInputRow("Start Date", cfg.goalStart) { update(cfg.copy(goalStart = it)) }
+                        DateInputRow("Deadline", cfg.goalEnd) { update(cfg.copy(goalEnd = it)) }
+                    }
+                }
+
+                if (error != null) {
+                    Text(
+                        error,
+                        color = Color(0xFFFF453A),
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
+            }
+        }
+
+        // Settings Section
+        Card(
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF141418)),
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Apply to
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SectionLabel("APPLY TO")
+                    ScrollableChips(Target.values().toList(), cfg.target, { it.label }) {
+                        update(cfg.copy(target = it))
+                    }
+                }
+
+                // Phone Target
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SectionLabel("PHONE MODEL")
+                    ScrollableChips(Device.values().toList(), cfg.device, { it.label }) {
+                        update(cfg.copy(device = it))
+                    }
+                }
+
+                // Accent Color
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SectionLabel("TODAY'S ACCENT DOT")
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        ACCENTS.forEach { a ->
+                            val argb = a.toInt()
+                            Box(
+                                modifier = Modifier
+                                    .size(34.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(argb))
+                                    .border(
+                                        width = if (cfg.accent == argb) 3.dp else 0.dp,
+                                        color = Color.White,
+                                        shape = CircleShape
+                                    )
+                                    .clickable { update(cfg.copy(accent = argb)) }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // Daily Auto-Update Card
+        Card(
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF141418)),
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(420.dp)
-                    .clip(RoundedCornerShape(20.dp))
-            )
-        }
-
-        when (cfg.mode) {
-            Mode.LIFE -> {
-                DateRow("Date of birth", cfg.dob) { update(cfg.copy(dob = it)) }
-                NumField(
-                    "Lifespan (years)",
-                    cfg.lifespan.toString(),
-                    Modifier.fillMaxWidth(),
-                    maxLen = 3
-                ) { v -> v.toIntOrNull()?.let { update(cfg.copy(lifespan = it.coerceIn(1, 120))) } }
-            }
-            Mode.YEAR -> {
-                NumField(
-                    "Year (leave empty = current year)",
-                    if (cfg.year == 0) "" else cfg.year.toString(),
-                    Modifier.fillMaxWidth(),
-                    maxLen = 4
-                ) { v -> update(cfg.copy(year = v.toIntOrNull() ?: 0)) }
-            }
-            Mode.GOAL -> {
-                OutlinedTextField(
-                    value = cfg.goalTitle,
-                    onValueChange = { update(cfg.copy(goalTitle = it)) },
-                    label = { Text("Goal") },
-                    placeholder = { Text("e.g. New York City Marathon") },
-                    singleLine = true,
-                    isError = cfg.goalTitle.isBlank(),
-                    modifier = Modifier.fillMaxWidth()
-                )
-                DateRow("Start date", cfg.goalStart) { update(cfg.copy(goalStart = it)) }
-                DateRow("Deadline", cfg.goalEnd) { update(cfg.copy(goalEnd = it)) }
-            }
-        }
-
-        if (error != null) {
-            Text(error, color = MaterialTheme.colorScheme.error)
-        }
-
-        Label("Phone")
-        ChipRow(Device.values().toList(), cfg.device, { it.label }) { update(cfg.copy(device = it)) }
-
-        Label("Apply to")
-        ChipRow(Target.values().toList(), cfg.target, { it.label }) { update(cfg.copy(target = it)) }
-
-        Label("Accent color")
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            ACCENTS.forEach { a ->
-                val argb = a.toInt()
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(Color(argb))
-                        .border(
-                            width = if (cfg.accent == argb) 3.dp else 0.dp,
-                            color = Color.White,
-                            shape = CircleShape
-                        )
-                        .clickable { update(cfg.copy(accent = argb)) }
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        "Daily Auto-Update",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White
+                    )
+                    Text(
+                        "Updates wallpaper silently at midnight",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFF8E8E93)
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Switch(
+                    checked = cfg.autoUpdate,
+                    onCheckedChange = { update(cfg.copy(autoUpdate = it)) }
                 )
             }
         }
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-        ) {
-            Text("Update automatically every day")
-            Switch(checked = cfg.autoUpdate, onCheckedChange = { update(cfg.copy(autoUpdate = it)) })
-        }
-
+        // Action Button
         Button(
             enabled = error == null,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(54.dp),
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(cfg.accent),
+                contentColor = Color.White
+            ),
             onClick = {
                 Scheduler.applyNow(ctx, cfg)
                 Toast.makeText(
                     ctx,
-                    if (cfg.autoUpdate) "Wallpaper set. It will refresh every midnight." else "Wallpaper set.",
+                    if (cfg.autoUpdate) "Wallpaper applied! Will auto-update daily." else "Wallpaper applied!",
                     Toast.LENGTH_LONG
                 ).show()
             }
-        ) { Text(if (cfg.autoUpdate) "Set wallpaper & start daily updates" else "Set wallpaper now") }
+        ) {
+            Text(
+                if (cfg.autoUpdate) "Set Wallpaper & Start Daily Updates" else "Set Wallpaper Now",
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp
+            )
+        }
 
+        // OxygenOS Battery Tip
         Text(
-            "Tip: allow this app to run unrestricted in battery settings so the midnight update is never skipped.",
+            "Note for OnePlus: In Settings > Apps > Jinsei > Battery, choose Unrestricted so OxygenOS doesn't sleep the midnight refresh.",
             style = MaterialTheme.typography.bodySmall,
-            color = Color.Gray
+            color = Color(0xFF636366),
+            lineHeight = 16.sp,
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
         )
     }
 }
 
 @Composable
-private fun Label(text: String) {
-    Text(text, style = MaterialTheme.typography.labelLarge, color = Color.Gray)
+private fun SectionLabel(text: String) {
+    Text(
+        text,
+        style = MaterialTheme.typography.labelSmall.copy(
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 0.5.sp
+        ),
+        color = Color(0xFF8E8E93)
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun <T> ChipRow(items: List<T>, selected: T, label: (T) -> String, onPick: (T) -> Unit) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+private fun <T> ScrollableChips(items: List<T>, selected: T, label: (T) -> String, onPick: (T) -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
         items.forEach { item ->
             FilterChip(
                 selected = item == selected,
                 onClick = { onPick(item) },
-                label = { Text(label(item)) }
+                label = { Text(label(item)) },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = Color(0xFF2C2C32),
+                    selectedLabelColor = Color.White,
+                    containerColor = Color(0xFF1A1A1E),
+                    labelColor = Color(0xFF8E8E93)
+                ),
+                border = FilterChipDefaults.filterChipBorder(
+                    borderColor = Color(0xFF2A2A30),
+                    selectedBorderColor = Color(0xFF5A5A64),
+                    enabled = true,
+                    selected = item == selected
+                )
             )
         }
     }
 }
 
 @Composable
-private fun NumField(
+private fun CompactField(
     label: String,
     value: String,
-    modifier: Modifier,
+    placeholder: String = "",
     maxLen: Int = 4,
-    isError: Boolean = false,
     onChange: (String) -> Unit
 ) {
     OutlinedTextField(
         value = value,
         onValueChange = { v -> if (v.length <= maxLen && v.all { it.isDigit() }) onChange(v) },
         label = { Text(label) },
+        placeholder = if (placeholder.isNotEmpty()) { { Text(placeholder) } } else null,
         singleLine = true,
-        isError = isError,
+        colors = customFieldColors(),
+        shape = RoundedCornerShape(10.dp),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        modifier = modifier
+        modifier = Modifier.fillMaxWidth()
     )
 }
 
-/** Year / Month / Day inputs. Only valid dates are saved. */
 @Composable
-private fun DateRow(label: String, iso: String, onValid: (String) -> Unit) {
+private fun DateInputRow(label: String, iso: String, onValid: (String) -> Unit) {
     val init = parseDate(iso) ?: LocalDate.now()
     var y by remember { mutableStateOf(init.year.toString()) }
     var m by remember { mutableStateOf(init.monthValue.toString()) }
@@ -282,13 +461,58 @@ private fun DateRow(label: String, iso: String, onValid: (String) -> Unit) {
     }
 
     val bad = parsed() == null
+
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Label(label)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            NumField("Year", y, Modifier.weight(1.4f), 4, bad) { y = it; emit() }
-            NumField("Month", m, Modifier.weight(1f), 2, bad) { m = it; emit() }
-            NumField("Day", d, Modifier.weight(1f), 2, bad) { d = it; emit() }
+        SectionLabel(label.uppercase())
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            OutlinedTextField(
+                value = y,
+                onValueChange = { if (it.length <= 4 && it.all { c -> c.isDigit() }) { y = it; emit() } },
+                label = { Text("Year") },
+                singleLine = true,
+                isError = bad,
+                colors = customFieldColors(),
+                shape = RoundedCornerShape(10.dp),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.weight(1.3f)
+            )
+            OutlinedTextField(
+                value = m,
+                onValueChange = { if (it.length <= 2 && it.all { c -> c.isDigit() }) { m = it; emit() } },
+                label = { Text("Month") },
+                singleLine = true,
+                isError = bad,
+                colors = customFieldColors(),
+                shape = RoundedCornerShape(10.dp),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.weight(1.0f)
+            )
+            OutlinedTextField(
+                value = d,
+                onValueChange = { if (it.length <= 2 && it.all { c -> c.isDigit() }) { d = it; emit() } },
+                label = { Text("Day") },
+                singleLine = true,
+                isError = bad,
+                colors = customFieldColors(),
+                shape = RoundedCornerShape(10.dp),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.weight(1.0f)
+            )
         }
     }
 }
 
+@Composable
+private fun customFieldColors() = OutlinedTextFieldDefaults.colors(
+    focusedBorderColor = Color(0xFF5A5A64),
+    unfocusedBorderColor = Color(0xFF2A2A30),
+    focusedLabelColor = Color(0xFFD4D4D8),
+    unfocusedLabelColor = Color(0xFF8E8E93),
+    focusedTextColor = Color.White,
+    unfocusedTextColor = Color.White,
+    focusedContainerColor = Color(0xFF101014),
+    unfocusedContainerColor = Color(0xFF101014)
+)

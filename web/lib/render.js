@@ -8,11 +8,11 @@ const DEVICES = {
 };
 
 const BLACK = '#000000';
-const CHARCOAL = '#1C1C1E';
+const DEEP_CHARCOAL = '#0E0E10'; // Darker matte charcoal
 const WHITE = '#FFFFFF';
 const GRAY_TEXT = '#8E8E93';
-const FUTURE = '#3C3C3E';
-const FUTURE_LIFE = '#2C2C2E';
+const FUTURE_DOT = '#262628';
+const FUTURE_LIFE = '#1E1E22';
 const DEFAULT_ACCENT = '#FF5B35';
 
 let FONT = 'sans-serif';
@@ -31,7 +31,7 @@ function initFont() {
         FONT = 'JinseiInter';
         return;
       }
-    } catch (e) { /* fall back to default font */ }
+    } catch (e) { /* fall back */ }
   }
 }
 
@@ -77,9 +77,9 @@ function buildSpec(o, today) {
     const idx = daysBetween(start, today);
     const cols = total <= 210 ? 15 : Math.ceil(Math.sqrt(total * 0.75));
     const [a, b] = stats(total, idx, 'd');
-    return { total, idx, cols, widthFrac: 0.63, dotRatio: 0.31, title: o.title || 'My Goal', a, b, bg: CHARCOAL, past: WHITE, future: FUTURE };
+    return { total, idx, cols, widthFrac: 0.63, dotRatio: 0.31, title: o.title || 'My Goal', a, b, bg: DEEP_CHARCOAL, past: WHITE, future: FUTURE_DOT };
   }
-  // year (default)
+  // year
   const cy = todayDate.getUTCFullYear();
   const y = parseInt(o.year, 10) || cy;
   const total = isLeap(y) ? 366 : 365;
@@ -88,7 +88,7 @@ function buildSpec(o, today) {
   else if (y > cy) idx = -1;
   else idx = daysBetween(Date.UTC(y, 0, 1), today);
   const [a, b] = stats(total, idx, 'd');
-  return { total, idx, cols: 15, widthFrac: 0.72, dotRatio: 0.34, title: null, a, b, bg: BLACK, past: WHITE, future: FUTURE };
+  return { total, idx, cols: 15, widthFrac: 0.72, dotRatio: 0.34, title: null, a, b, bg: BLACK, past: WHITE, future: FUTURE_DOT };
 }
 
 function resolveSize(device) {
@@ -98,7 +98,6 @@ function resolveSize(device) {
   return DEVICES.oneplus13s;
 }
 
-/** o: { type, dob, lifespan, year, title, start, end, device, accent, tz, today } */
 function render(o) {
   initFont();
   const [w, h] = resolveSize(o.device);
@@ -115,13 +114,14 @@ function render(o) {
   const rows = Math.ceil(s.total / s.cols);
   const titleSize = w * 0.030;
   const statsSize = w * 0.024;
-  const titleH = s.title ? titleSize + w * 0.035 : 0;
-  const statsH = w * 0.028 + statsSize;
+  const titleH = s.title ? titleSize + w * 0.038 : 0;
+  const statsH = w * 0.030 + statsSize;
 
   let step = (w * s.widthFrac) / s.cols;
-  let top = Math.max(h * 0.28, h * 0.50 - (titleH + step * rows + statsH) / 2);
-  step = Math.min(step, (h * 0.90 - top - titleH - statsH) / rows);
-  top = Math.max(h * 0.28, Math.min(top, h * 0.50 - (titleH + step * rows + statsH) / 2));
+  const minTopFrac = s.cols === 52 ? 0.38 : 0.44;
+  var top = Math.max(h * minTopFrac, h * 0.52 - (titleH + step * rows + statsH) / 2);
+  step = Math.min(step, (h * 0.86 - top - titleH - statsH) / rows);
+  top = Math.max(h * minTopFrac, Math.min(top, h * 0.52 - (titleH + step * rows + statsH) / 2));
 
   const gridTop = top + titleH;
   const gridBottom = gridTop + step * rows;
@@ -148,7 +148,7 @@ function render(o) {
   const wl = c.measureText(s.a).width;
   const wr = c.measureText(s.b).width;
   const sx = (w - (wl + wr)) / 2;
-  const sy = gridBottom + w * 0.028 + statsSize;
+  const sy = gridBottom + w * 0.030 + statsSize;
   c.fillStyle = accent;
   c.fillText(s.a, sx, sy);
   c.fillStyle = GRAY_TEXT;
@@ -158,4 +158,3 @@ function render(o) {
 }
 
 module.exports = { render, DEVICES };
-

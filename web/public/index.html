@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jinsei</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:#0b0b0c; color:#f4f4f5; font-family:-apple-system,BlinkMacSystemFont,"Inter",sans-serif; display:flex; justify-content:center; padding:32px 16px; }
+  .wrap { display:flex; gap:40px; flex-wrap:wrap; justify-content:center; max-width:900px; width:100%; }
+  h1 { font-size:28px; margin:0 0 4px; } p.sub { color:#8e8e93; margin:0 0 24px; }
+  .panel { width:360px; max-width:100%; display:flex; flex-direction:column; gap:14px; }
+  label { font-size:12px; color:#8e8e93; text-transform:uppercase; letter-spacing:.05em; display:block; margin-bottom:6px; }
+  input, select { width:100%; background:#161618; border:1px solid #2a2a2d; color:#fff; padding:11px 12px; border-radius:10px; font-size:15px; }
+  .row { display:flex; gap:8px; } .row > * { flex:1; }
+  .tabs { display:flex; gap:8px; } .tabs button { flex:1; padding:10px; border-radius:10px; border:1px solid #2a2a2d; background:#161618; color:#8e8e93; cursor:pointer; }
+  .tabs button.on { background:#2a2a2d; color:#fff; }
+  .preview { width:280px; border-radius:24px; border:1px solid #2a2a2d; background:#000; }
+  code { display:block; word-break:break-all; background:#161618; padding:10px; border-radius:10px; font-size:12px; color:#ff5b35; }
+  button.copy { padding:11px; border-radius:10px; border:0; background:#ff5b35; color:#fff; font-weight:600; cursor:pointer; }
+  .hide { display:none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="panel">
+    <h1>Jinsei</h1>
+    <p class="sub">Design your wallpaper. The URL always shows today's progress.</p>
+    <div class="tabs" id="tabs">
+      <button data-t="life">Life</button><button data-t="year" class="on">Year</button><button data-t="goal">Goal</button>
+    </div>
+    <div id="f-life" class="hide">
+      <label>Date of birth</label><input type="date" id="dob" value="2000-01-01">
+      <label style="margin-top:12px">Lifespan (years)</label><input type="number" id="lifespan" value="90" min="1" max="120">
+    </div>
+    <div id="f-year"><label>Year (empty = current)</label><input type="number" id="year" placeholder="2026"></div>
+    <div id="f-goal" class="hide">
+      <label>Goal</label><input id="title" placeholder="e.g. New York City Marathon">
+      <div class="row" style="margin-top:12px"><div><label>Start</label><input type="date" id="start"></div><div><label>Deadline</label><input type="date" id="end"></div></div>
+    </div>
+    <div><label>Phone</label>
+      <select id="device"><option value="oneplus13s">OnePlus 13s</option><option value="oneplus13">OnePlus 13</option></select></div>
+    <div><label>Accent color</label><input type="color" id="accent" value="#ff5b35" style="height:44px;padding:4px"></div>
+    <code id="url"></code>
+    <button class="copy" id="copy">Copy wallpaper URL</button>
+  </div>
+  <img class="preview" id="img" alt="preview">
+</div>
+<script>
+  const $ = id => document.getElementById(id);
+  let type = 'year';
+  const today = new Date(); const iso = d => d.toISOString().slice(0,10);
+  $('start').value = iso(today); $('end').value = iso(new Date(today.getTime()+90*864e5));
+  function build() {
+    const p = new URLSearchParams({ type, device: $('device').value, accent: $('accent').value.slice(1) });
+    if (type==='life') { p.set('dob',$('dob').value); p.set('lifespan',$('lifespan').value); }
+    if (type==='year' && $('year').value) p.set('year',$('year').value);
+    if (type==='goal') { p.set('title',$('title').value||'My Goal'); p.set('start',$('start').value); p.set('end',$('end').value); }
+    const rel = '/api/wallpaper?' + p.toString();
+    $('url').textContent = location.origin + rel; $('img').src = rel;
+  }
+  document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => {
+    type = b.dataset.t;
+    document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x===b));
+    ['life','year','goal'].forEach(t => $('f-'+t).classList.toggle('hide', t!==type));
+    build();
+  });
+  document.querySelectorAll('input,select').forEach(e => e.addEventListener('input', build));
+  $('copy').onclick = () => navigator.clipboard.writeText($('url').textContent);
+  build();
+</script>
+</body>
+</html>
+

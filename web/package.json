@@ -1,0 +1,15 @@
+{
+  "name": "jinsei-web",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Renders Life / Year / Goal calendar wallpapers as PNG.",
+  "engines": { "node": "20.x" },
+  "scripts": {
+    "test:render": "node scripts/test.js"
+  },
+  "dependencies": {
+    "@fontsource/inter": "^5.0.20",
+    "@napi-rs/canvas": "^0.1.56"
+  }
+}
+

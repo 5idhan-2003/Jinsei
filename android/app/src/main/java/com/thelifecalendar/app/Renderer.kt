@@ -25,18 +25,11 @@ private class Spec(
     val statsRest: String,
     val bg: Int,
     val past: Int,
-    val future: Int
+    val future: Int,
+    val textColor: Int
 )
 
 object Renderer {
-    // Rich, deep AMOLED-friendly dark palette
-    private const val BLACK = 0xFF000000.toInt()
-    private const val DEEP_CHARCOAL = 0xFF0E0E10.toInt() // Darker, sleeker background
-    private const val WHITE = 0xFFFFFFFF.toInt()
-    private const val GRAY_TEXT = 0xFF8E8E93.toInt()
-    private const val FUTURE_DOT = 0xFF262628.toInt() // Muted subtle future dots
-    private const val FUTURE_LIFE = 0xFF1E1E22.toInt()
-
     private fun stats(total: Int, idx: Int, unit: String): Pair<String, String> {
         val elapsed = (idx + 1).coerceIn(0, total)
         val left = total - elapsed
@@ -44,34 +37,46 @@ object Renderer {
         return "$left$unit left" to "  \u00B7  $pct%"
     }
 
-    private fun spec(cfg: WallpaperConfig, today: LocalDate): Spec = when (cfg.mode) {
-        Mode.YEAR -> {
-            val y = if (cfg.year == 0) today.year else cfg.year
-            val total = Year.of(y).length()
-            val idx = when {
-                y < today.year -> total
-                y > today.year -> -1
-                else -> today.dayOfYear - 1
+    private fun spec(cfg: WallpaperConfig, today: LocalDate): Spec {
+        val isLight = cfg.theme == Theme.LIGHT
+
+        // Plain solid backgrounds (100% flat, zero gradient)
+        // Dark is pure #000000 so OxygenOS lockscreen scrim blends invisibly!
+        val bg = if (isLight) 0xFFFFFFFF.toInt() else 0xFF000000.toInt()
+        val past = if (isLight) 0xFF000000.toInt() else 0xFFFFFFFF.toInt()
+        val future = if (isLight) 0xFFE0E0E6.toInt() else 0xFF242428.toInt()
+        val futureLife = if (isLight) 0xFFE5E5EB.toInt() else 0xFF1C1C20.toInt()
+        val textColor = if (isLight) 0xFF6E6E73.toInt() else 0xFF8E8E93.toInt()
+
+        return when (cfg.mode) {
+            Mode.YEAR -> {
+                val y = if (cfg.year == 0) today.year else cfg.year
+                val total = Year.of(y).length()
+                val idx = when {
+                    y < today.year -> total
+                    y > today.year -> -1
+                    else -> today.dayOfYear - 1
+                }
+                val (a, b) = stats(total, idx, "d")
+                Spec(total, idx, 15, 0.72f, 0.34f, null, a, b, bg, past, future, textColor)
             }
-            val (a, b) = stats(total, idx, "d")
-            Spec(total, idx, 15, 0.72f, 0.34f, null, a, b, BLACK, WHITE, FUTURE_DOT)
-        }
-        Mode.GOAL -> {
-            val start = parseDate(cfg.goalStart) ?: today
-            var end = parseDate(cfg.goalEnd) ?: start.plusDays(1)
-            if (!end.isAfter(start)) end = start.plusDays(1)
-            val total = ChronoUnit.DAYS.between(start, end).toInt()
-            val idx = ChronoUnit.DAYS.between(start, today).toInt()
-            val cols = if (total <= 210) 15 else ceil(sqrt(total * 0.75)).toInt()
-            val (a, b) = stats(total, idx, "d")
-            Spec(total, idx, cols, 0.63f, 0.31f, cfg.goalTitle, a, b, DEEP_CHARCOAL, WHITE, FUTURE_DOT)
-        }
-        Mode.LIFE -> {
-            val dob = parseDate(cfg.dob) ?: today
-            val total = cfg.lifespan.coerceIn(1, 120) * 52
-            val idx = (ChronoUnit.DAYS.between(dob, today) / 7).toInt()
-            val (a, b) = stats(total, idx, " weeks")
-            Spec(total, idx, 52, 0.70f, 0.38f, null, a, b, BLACK, WHITE, FUTURE_LIFE)
+            Mode.GOAL -> {
+                val start = parseDate(cfg.goalStart) ?: today
+                var end = parseDate(cfg.goalEnd) ?: start.plusDays(1)
+                if (!end.isAfter(start)) end = start.plusDays(1)
+                val total = ChronoUnit.DAYS.between(start, end).toInt()
+                val idx = ChronoUnit.DAYS.between(start, today).toInt()
+                val cols = if (total <= 210) 15 else ceil(sqrt(total * 0.75)).toInt()
+                val (a, b) = stats(total, idx, "d")
+                Spec(total, idx, cols, 0.63f, 0.31f, cfg.goalTitle, a, b, bg, past, future, textColor)
+            }
+            Mode.LIFE -> {
+                val dob = parseDate(cfg.dob) ?: today
+                val total = cfg.lifespan.coerceIn(1, 120) * 52
+                val idx = (ChronoUnit.DAYS.between(dob, today) / 7).toInt()
+                val (a, b) = stats(total, idx, " weeks")
+                Spec(total, idx, 52, 0.70f, 0.38f, null, a, b, bg, past, futureLife, textColor)
+            }
         }
     }
 
@@ -84,6 +89,8 @@ object Renderer {
         val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
         val c = Canvas(bmp)
         val s = spec(cfg, today)
+
+        // Plain flat solid background
         c.drawColor(s.bg)
 
         val wf = w.toFloat()
@@ -97,15 +104,12 @@ object Renderer {
 
         var step = wf * s.widthFrac / s.cols
 
-        // Shift down so it sits comfortably BELOW clock + lock screen widgets
-        // Widgets on OnePlus 13s end around 38-40% down the screen.
-        // Starting at 44% (Goal) or 40% (Year/Life) gives clean, intentional negative space!
-        val minTopFrac = if (s.cols == 52) 0.38f else 0.44f
-        var top = max(hf * minTopFrac, hf * 0.52f - (titleH + step * rows + statsH) / 2f)
+        // Comfortable clearance below clock + lock screen widgets
+        val minTopFrac = if (s.cols == 52) 0.38f else 0.45f
+        var top = max(hf * minTopFrac, hf * 0.53f - (titleH + step * rows + statsH) / 2f)
 
-        // Ensure clearance from bottom lockscreen player / shortcuts
         step = min(step, (hf * 0.86f - top - titleH - statsH) / rows)
-        top = max(hf * minTopFrac, min(top, hf * 0.52f - (titleH + step * rows + statsH) / 2f))
+        top = max(hf * minTopFrac, min(top, hf * 0.53f - (titleH + step * rows + statsH) / 2f))
 
         val gridTop = top + titleH
         val gridBottom = gridTop + step * rows
@@ -118,7 +122,7 @@ object Renderer {
         if (s.title != null) {
             paint.typeface = face
             paint.textSize = titleSize
-            paint.color = GRAY_TEXT
+            paint.color = s.textColor
             val tw = paint.measureText(s.title)
             c.drawText(s.title, (wf - tw) / 2f, top + titleSize, paint)
         }
@@ -144,7 +148,7 @@ object Renderer {
         val sy = gridBottom + wf * 0.030f + statsSize
         paint.color = cfg.accent
         c.drawText(s.statsLeft, sx, sy, paint)
-        paint.color = GRAY_TEXT
+        paint.color = s.textColor
         c.drawText(s.statsRest, sx + wLeft, sy, paint)
 
         return bmp

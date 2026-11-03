@@ -7,12 +7,6 @@ const DEVICES = {
   oneplus13: [1440, 3168],
 };
 
-const BLACK = '#000000';
-const DEEP_CHARCOAL = '#0E0E10'; // Darker matte charcoal
-const WHITE = '#FFFFFF';
-const GRAY_TEXT = '#8E8E93';
-const FUTURE_DOT = '#262628';
-const FUTURE_LIFE = '#1E1E22';
 const DEFAULT_ACCENT = '#FF5B35';
 
 let FONT = 'sans-serif';
@@ -60,6 +54,14 @@ function stats(total, idx, unit) {
 }
 
 function buildSpec(o, today) {
+  const isLight = o.theme === 'light';
+  // Plain solid flat backgrounds - zero gradients
+  const bg = isLight ? '#FFFFFF' : '#000000';
+  const past = isLight ? '#000000' : '#FFFFFF';
+  const future = isLight ? '#E0E0E6' : '#242428';
+  const futureLife = isLight ? '#E5E5EB' : '#1C1C20';
+  const textColor = isLight ? '#6E6E73' : '#8E8E93';
+
   const todayDate = new Date(today);
   if (o.type === 'life') {
     const dob = parseISO(o.dob) ?? today;
@@ -67,7 +69,7 @@ function buildSpec(o, today) {
     const total = lifespan * 52;
     const idx = Math.floor(daysBetween(dob, today) / 7);
     const [a, b] = stats(total, idx, ' weeks');
-    return { total, idx, cols: 52, widthFrac: 0.70, dotRatio: 0.38, title: null, a, b, bg: BLACK, past: WHITE, future: FUTURE_LIFE };
+    return { total, idx, cols: 52, widthFrac: 0.70, dotRatio: 0.38, title: null, a, b, bg, past, future: futureLife, textColor };
   }
   if (o.type === 'goal') {
     const start = parseISO(o.start) ?? today;
@@ -77,7 +79,7 @@ function buildSpec(o, today) {
     const idx = daysBetween(start, today);
     const cols = total <= 210 ? 15 : Math.ceil(Math.sqrt(total * 0.75));
     const [a, b] = stats(total, idx, 'd');
-    return { total, idx, cols, widthFrac: 0.63, dotRatio: 0.31, title: o.title || 'My Goal', a, b, bg: DEEP_CHARCOAL, past: WHITE, future: FUTURE_DOT };
+    return { total, idx, cols, widthFrac: 0.63, dotRatio: 0.31, title: o.title || 'My Goal', a, b, bg, past, future, textColor };
   }
   // year
   const cy = todayDate.getUTCFullYear();
@@ -88,7 +90,7 @@ function buildSpec(o, today) {
   else if (y > cy) idx = -1;
   else idx = daysBetween(Date.UTC(y, 0, 1), today);
   const [a, b] = stats(total, idx, 'd');
-  return { total, idx, cols: 15, widthFrac: 0.72, dotRatio: 0.34, title: null, a, b, bg: BLACK, past: WHITE, future: FUTURE_DOT };
+  return { total, idx, cols: 15, widthFrac: 0.72, dotRatio: 0.34, title: null, a, b, bg, past, future, textColor };
 }
 
 function resolveSize(device) {
@@ -118,10 +120,10 @@ function render(o) {
   const statsH = w * 0.030 + statsSize;
 
   let step = (w * s.widthFrac) / s.cols;
-  const minTopFrac = s.cols === 52 ? 0.38 : 0.44;
-  var top = Math.max(h * minTopFrac, h * 0.52 - (titleH + step * rows + statsH) / 2);
+  const minTopFrac = s.cols === 52 ? 0.38 : 0.45;
+  var top = Math.max(h * minTopFrac, h * 0.53 - (titleH + step * rows + statsH) / 2);
   step = Math.min(step, (h * 0.86 - top - titleH - statsH) / rows);
-  top = Math.max(h * minTopFrac, Math.min(top, h * 0.52 - (titleH + step * rows + statsH) / 2));
+  top = Math.max(h * minTopFrac, Math.min(top, h * 0.53 - (titleH + step * rows + statsH) / 2));
 
   const gridTop = top + titleH;
   const gridBottom = gridTop + step * rows;
@@ -130,7 +132,7 @@ function render(o) {
 
   if (s.title) {
     c.font = `${titleSize}px ${FONT}`;
-    c.fillStyle = GRAY_TEXT;
+    c.fillStyle = s.textColor;
     const tw = c.measureText(s.title).width;
     c.fillText(s.title, (w - tw) / 2, top + titleSize);
   }
@@ -151,7 +153,7 @@ function render(o) {
   const sy = gridBottom + w * 0.030 + statsSize;
   c.fillStyle = accent;
   c.fillText(s.a, sx, sy);
-  c.fillStyle = GRAY_TEXT;
+  c.fillStyle = s.textColor;
   c.fillText(s.b, sx + wl, sy);
 
   return canvas.toBuffer('image/png');

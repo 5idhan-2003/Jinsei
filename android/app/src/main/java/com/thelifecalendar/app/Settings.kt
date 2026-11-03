@@ -8,6 +8,8 @@ import java.time.LocalDate
 
 enum class Mode(val label: String) { LIFE("Life"), YEAR("Year"), GOAL("Goal") }
 
+enum class Theme(val label: String) { DARK("Dark (Black)"), LIGHT("Light (White)") }
+
 enum class Target(val label: String) {
     LOCK("Lock screen"),
     HOME("Home screen"),
@@ -23,6 +25,7 @@ enum class Device(val label: String, val w: Int, val h: Int) {
 /** Every user-editable field lives here, so new options can be added in one place later. */
 data class WallpaperConfig(
     val mode: Mode = Mode.YEAR,
+    val theme: Theme = Theme.DARK,
     // Life calendar
     val dob: String = "2000-01-01",
     val lifespan: Int = 90,
@@ -52,6 +55,7 @@ object Prefs {
         val d = WallpaperConfig()
         return WallpaperConfig(
             mode = enumOr(p.getString("mode", null), d.mode),
+            theme = enumOr(p.getString("theme", null), d.theme),
             dob = p.getString("dob", d.dob) ?: d.dob,
             lifespan = p.getInt("lifespan", d.lifespan),
             year = p.getInt("year", d.year),
@@ -68,6 +72,7 @@ object Prefs {
     fun save(ctx: Context, c: WallpaperConfig) {
         ctx.getSharedPreferences(NAME, Context.MODE_PRIVATE).edit()
             .putString("mode", c.mode.name)
+            .putString("theme", c.theme.name)
             .putString("dob", c.dob)
             .putInt("lifespan", c.lifespan)
             .putInt("year", c.year)
@@ -96,4 +101,3 @@ fun deviceSize(ctx: Context, d: Device): Pair<Int, Int> {
         dm.widthPixels to dm.heightPixels
     }
 }
-

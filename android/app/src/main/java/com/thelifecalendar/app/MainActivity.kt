@@ -132,9 +132,9 @@ fun App() {
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
+        verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
-        // Header
+        // App Title
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
                 "Jinsei",
@@ -151,7 +151,7 @@ fun App() {
             )
         }
 
-        // Tabs
+        // Mode Tabs
         TabRow(
             selectedTabIndex = cfg.mode.ordinal,
             containerColor = Color(0xFF141417),
@@ -179,7 +179,7 @@ fun App() {
             }
         }
 
-        // Compact, elegant Preview Frame (centered, 220dp height instead of 420dp)
+        // Preview Frame
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -213,7 +213,7 @@ fun App() {
             ) {
                 when (cfg.mode) {
                     Mode.LIFE -> {
-                        DateInputRow("Date of birth", cfg.dob) { update(cfg.copy(dob = it)) }
+                        DateInputRow("Date of Birth", cfg.dob) { update(cfg.copy(dob = it)) }
                         CompactField(
                             label = "Lifespan (years)",
                             value = cfg.lifespan.toString(),
@@ -235,6 +235,7 @@ fun App() {
                             label = { Text("Goal Title") },
                             placeholder = { Text("e.g. metamorphosis") },
                             singleLine = true,
+                            maxLines = 1,
                             isError = cfg.goalTitle.isBlank(),
                             colors = customFieldColors(),
                             shape = RoundedCornerShape(10.dp),
@@ -256,7 +257,7 @@ fun App() {
             }
         }
 
-        // Settings Section
+        // Appearance & Device Settings
         Card(
             colors = CardDefaults.cardColors(containerColor = Color(0xFF141418)),
             shape = RoundedCornerShape(16.dp),
@@ -266,10 +267,26 @@ fun App() {
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // Background Theme (Dark / Light)
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SectionLabel("BACKGROUND THEME")
+                    ScrollableChips(
+                        items = Theme.values().toList(),
+                        selected = cfg.theme,
+                        label = { it.label }
+                    ) {
+                        update(cfg.copy(theme = it))
+                    }
+                }
+
                 // Apply to
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     SectionLabel("APPLY TO")
-                    ScrollableChips(Target.values().toList(), cfg.target, { it.label }) {
+                    ScrollableChips(
+                        items = Target.values().toList(),
+                        selected = cfg.target,
+                        label = { it.label }
+                    ) {
                         update(cfg.copy(target = it))
                     }
                 }
@@ -277,7 +294,11 @@ fun App() {
                 // Phone Target
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     SectionLabel("PHONE MODEL")
-                    ScrollableChips(Device.values().toList(), cfg.device, { it.label }) {
+                    ScrollableChips(
+                        items = Device.values().toList(),
+                        selected = cfg.device,
+                        label = { it.label }
+                    ) {
                         update(cfg.copy(device = it))
                     }
                 }
@@ -330,7 +351,7 @@ fun App() {
                         color = Color.White
                     )
                     Text(
-                        "Updates wallpaper silently at midnight",
+                        "Refreshes wallpaper silently at midnight",
                         style = MaterialTheme.typography.bodySmall,
                         color = Color(0xFF8E8E93)
                     )
@@ -343,7 +364,7 @@ fun App() {
             }
         }
 
-        // Action Button
+        // Set Wallpaper Action Button
         Button(
             enabled = error == null,
             modifier = Modifier
@@ -370,7 +391,7 @@ fun App() {
             )
         }
 
-        // OxygenOS Battery Tip
+        // Battery Tip
         Text(
             "Note for OnePlus: In Settings > Apps > Jinsei > Battery, choose Unrestricted so OxygenOS doesn't sleep the midnight refresh.",
             style = MaterialTheme.typography.bodySmall,
@@ -438,6 +459,7 @@ private fun CompactField(
         label = { Text(label) },
         placeholder = if (placeholder.isNotEmpty()) { { Text(placeholder) } } else null,
         singleLine = true,
+        maxLines = 1,
         colors = customFieldColors(),
         shape = RoundedCornerShape(10.dp),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -445,6 +467,9 @@ private fun CompactField(
     )
 }
 
+/**
+ * 3-column Date Input: labels use short "YYYY", "MM", "DD" so "Month" NEVER wraps "h" to the next line!
+ */
 @Composable
 private fun DateInputRow(label: String, iso: String, onValid: (String) -> Unit) {
     val init = parseDate(iso) ?: LocalDate.now()
@@ -471,8 +496,9 @@ private fun DateInputRow(label: String, iso: String, onValid: (String) -> Unit) 
             OutlinedTextField(
                 value = y,
                 onValueChange = { if (it.length <= 4 && it.all { c -> c.isDigit() }) { y = it; emit() } },
-                label = { Text("Year") },
+                label = { Text("YYYY", fontSize = 12.sp, maxLines = 1) },
                 singleLine = true,
+                maxLines = 1,
                 isError = bad,
                 colors = customFieldColors(),
                 shape = RoundedCornerShape(10.dp),
@@ -482,8 +508,9 @@ private fun DateInputRow(label: String, iso: String, onValid: (String) -> Unit) 
             OutlinedTextField(
                 value = m,
                 onValueChange = { if (it.length <= 2 && it.all { c -> c.isDigit() }) { m = it; emit() } },
-                label = { Text("Month") },
+                label = { Text("MM", fontSize = 12.sp, maxLines = 1) },
                 singleLine = true,
+                maxLines = 1,
                 isError = bad,
                 colors = customFieldColors(),
                 shape = RoundedCornerShape(10.dp),
@@ -493,8 +520,9 @@ private fun DateInputRow(label: String, iso: String, onValid: (String) -> Unit) 
             OutlinedTextField(
                 value = d,
                 onValueChange = { if (it.length <= 2 && it.all { c -> c.isDigit() }) { d = it; emit() } },
-                label = { Text("Day") },
+                label = { Text("DD", fontSize = 12.sp, maxLines = 1) },
                 singleLine = true,
+                maxLines = 1,
                 isError = bad,
                 colors = customFieldColors(),
                 shape = RoundedCornerShape(10.dp),

@@ -1,5 +1,8 @@
 package com.thelifecalendar.app
 
+import android.app.WallpaperManager
+import android.content.ComponentName
+import android.content.Intent
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.widget.Toast
@@ -99,6 +102,8 @@ fun App() {
     fun update(n: WallpaperConfig) {
         cfg = n
         Prefs.save(ctx, n)
+        // Automatically sync with running wallpaper service
+        JinseiWallpaperService.notifyUpdate(ctx)
     }
 
     val (pw, ph) = deviceSize(ctx, cfg.device)
@@ -145,7 +150,7 @@ fun App() {
                 color = Color.White
             )
             Text(
-                "Minimalist dot wallpaper for OnePlus 13s",
+                "Minimalist wallpaper for OnePlus 13s (ColorOS 17)",
                 style = MaterialTheme.typography.bodySmall,
                 color = Color(0xFF8E8E93)
             )
@@ -179,7 +184,7 @@ fun App() {
             }
         }
 
-        // Preview Frame
+        // Preview Frame (220dp height)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -257,7 +262,7 @@ fun App() {
             }
         }
 
-        // Appearance & Device Settings
+        // Appearance & Settings Card
         Card(
             colors = CardDefaults.cardColors(containerColor = Color(0xFF141418)),
             shape = RoundedCornerShape(16.dp),
@@ -269,25 +274,13 @@ fun App() {
             ) {
                 // Background Theme (Dark / Light)
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SectionLabel("BACKGROUND THEME")
+                    SectionLabel("BACKGROUND THEME (PLAIN FLAT)")
                     ScrollableChips(
                         items = Theme.values().toList(),
                         selected = cfg.theme,
                         label = { it.label }
                     ) {
                         update(cfg.copy(theme = it))
-                    }
-                }
-
-                // Apply to
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SectionLabel("APPLY TO")
-                    ScrollableChips(
-                        items = Target.values().toList(),
-                        selected = cfg.target,
-                        label = { it.label }
-                    ) {
-                        update(cfg.copy(target = it))
                     }
                 }
 
@@ -351,7 +344,7 @@ fun App() {
                         color = Color.White
                     )
                     Text(
-                        "Refreshes wallpaper silently at midnight",
+                        "Advances dots seamlessly at midnight",
                         style = MaterialTheme.typography.bodySmall,
                         color = Color(0xFF8E8E93)
                     )
@@ -364,7 +357,7 @@ fun App() {
             }
         }
 
-        // Set Wallpaper Action Button
+        // Primary Action: Apply / Select Jinsei Wallpaper
         Button(
             enabled = error == null,
             modifier = Modifier
@@ -376,24 +369,66 @@ fun App() {
                 contentColor = Color.White
             ),
             onClick = {
-                Scheduler.applyNow(ctx, cfg)
-                Toast.makeText(
-                    ctx,
-                    if (cfg.autoUpdate) "Wallpaper applied! Will auto-update daily." else "Wallpaper applied!",
-                    Toast.LENGTH_LONG
-                ).show()
+                Prefs.save(ctx, cfg)
+                JinseiWallpaperService.notifyUpdate(ctx)
+
+                val intent = Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER).apply {
+                    putExtra(
+                        WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT,
+                        ComponentName(ctx, JinseiWallpaperService::class.java)
+                    )
+                }
+                try {
+                    ctx.startActivity(intent)
+                } catch (e: Exception) {
+                    try {
+                        val fallback = Intent(WallpaperManager.ACTION_LIVE_WALLPAPER_CHOOSER)
+                        ctx.startActivity(fallback)
+                    } catch (e2: Exception) {
+                        Scheduler.applyNow(ctx, cfg)
+                        Toast.makeText(ctx, "Applied as static wallpaper!", Toast.LENGTH_SHORT).show()
+                    }
+                }
             }
         ) {
             Text(
-                if (cfg.autoUpdate) "Set Wallpaper & Start Daily Updates" else "Set Wallpaper Now",
+                "Apply Jinsei Wallpaper (Lock Screen)",
                 fontWeight = FontWeight.Bold,
                 fontSize = 15.sp
             )
         }
 
-        // Battery Tip
+        // Secondary Action: Instant Wallpaper Update (Zero Theme Change)
+        Button(
+            enabled = error == null,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp),
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF1E1E24),
+                contentColor = Color.White
+            ),
+            onClick = {
+                Prefs.save(ctx, cfg)
+                JinseiWallpaperService.notifyUpdate(ctx)
+                Toast.makeText(
+                    ctx,
+                    "Wallpaper updated! (Phone theme untouched)",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        ) {
+            Text(
+                "Update Wallpaper Now (No Theme Reset)",
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 14.sp
+            )
+        }
+
+        // Explanation Tip
         Text(
-            "Note for OnePlus: In Settings > Apps > Jinsei > Battery, choose Unrestricted so OxygenOS doesn't sleep the midnight refresh.",
+            "ColorOS 17 Tip: After tapping 'Apply Jinsei Wallpaper', select 'Lock screen'. Any future setting changes update the dots instantly without ever changing your OnePlus phone theme or widget layout.",
             style = MaterialTheme.typography.bodySmall,
             color = Color(0xFF636366),
             lineHeight = 16.sp,
@@ -467,9 +502,6 @@ private fun CompactField(
     )
 }
 
-/**
- * 3-column Date Input: labels use short "YYYY", "MM", "DD" so "Month" NEVER wraps "h" to the next line!
- */
 @Composable
 private fun DateInputRow(label: String, iso: String, onValid: (String) -> Unit) {
     val init = parseDate(iso) ?: LocalDate.now()

@@ -16,8 +16,10 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -62,6 +64,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
@@ -362,7 +365,8 @@ fun App() {
             enabled = error == null,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(54.dp),
+                .defaultMinSize(minHeight = 52.dp),
+            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 14.dp),
             shape = RoundedCornerShape(14.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color(cfg.accent),
@@ -392,9 +396,10 @@ fun App() {
             }
         ) {
             Text(
-                "Apply Jinsei Wallpaper (Lock Screen)",
+                "Apply to Lock Screen",
                 fontWeight = FontWeight.Bold,
-                fontSize = 15.sp
+                fontSize = 15.sp,
+                textAlign = TextAlign.Center
             )
         }
 
@@ -403,7 +408,8 @@ fun App() {
             enabled = error == null,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(48.dp),
+                .defaultMinSize(minHeight = 48.dp),
+            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
             shape = RoundedCornerShape(14.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color(0xFF1E1E24),
@@ -420,15 +426,16 @@ fun App() {
             }
         ) {
             Text(
-                "Update Wallpaper Now (No Theme Reset)",
+                "Refresh Wallpaper",
                 fontWeight = FontWeight.SemiBold,
-                fontSize = 14.sp
+                fontSize = 14.sp,
+                textAlign = TextAlign.Center
             )
         }
 
         // Explanation Tip
         Text(
-            "ColorOS 17 Tip: After tapping 'Apply Jinsei Wallpaper', select 'Lock screen'. Any future setting changes update the dots instantly without ever changing your OnePlus phone theme or widget layout.",
+            "ColorOS 17 Tip: Tap 'Apply to Lock Screen' to set the live wallpaper once. From then on, any changes update automatically—tap 'Refresh Wallpaper' or lock/unlock your phone to see updates without ever resetting your system theme or widgets.",
             style = MaterialTheme.typography.bodySmall,
             color = Color(0xFF636366),
             lineHeight = 16.sp,

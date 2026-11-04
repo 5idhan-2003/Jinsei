@@ -8,7 +8,7 @@ import java.time.LocalDate
 
 enum class Mode(val label: String) { LIFE("Life"), YEAR("Year"), GOAL("Goal") }
 
-enum class Theme(val label: String) { DARK("Dark (Black)"), LIGHT("Light (White)") }
+enum class Theme(val label: String) { DARK("Dark"), LIGHT("Light") }
 
 enum class Target(val label: String) {
     LOCK("Lock screen"),
@@ -48,10 +48,13 @@ private inline fun <reified T : Enum<T>> enumOr(s: String?, def: T): T =
     runCatching { enumValueOf<T>(s!!) }.getOrDefault(def)
 
 object Prefs {
-    private const val NAME = "wallpaper_config"
+    const val PREFS_NAME = "wallpaper_config"
+
+    fun getPreferences(ctx: Context): android.content.SharedPreferences =
+        ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     fun load(ctx: Context): WallpaperConfig {
-        val p = ctx.getSharedPreferences(NAME, Context.MODE_PRIVATE)
+        val p = getPreferences(ctx)
         val d = WallpaperConfig()
         return WallpaperConfig(
             mode = enumOr(p.getString("mode", null), d.mode),
@@ -70,7 +73,7 @@ object Prefs {
     }
 
     fun save(ctx: Context, c: WallpaperConfig) {
-        ctx.getSharedPreferences(NAME, Context.MODE_PRIVATE).edit()
+        getPreferences(ctx).edit()
             .putString("mode", c.mode.name)
             .putString("theme", c.theme.name)
             .putString("dob", c.dob)

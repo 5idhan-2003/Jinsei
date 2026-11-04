@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.SharedPreferences
 import android.graphics.PixelFormat
 import android.os.Build
 import android.service.wallpaper.WallpaperService
@@ -17,7 +18,7 @@ class JinseiWallpaperService : WallpaperService() {
         return JinseiEngine()
     }
 
-    inner class JinseiEngine : Engine() {
+    inner class JinseiEngine : Engine(), SharedPreferences.OnSharedPreferenceChangeListener {
         private var lastDrawnDate: LocalDate? = null
         private var width: Int = 1216
         private var height: Int = 2640
@@ -31,6 +32,15 @@ class JinseiWallpaperService : WallpaperService() {
         override fun onCreate(surfaceHolder: SurfaceHolder) {
             super.onCreate(surfaceHolder)
             surfaceHolder.setFormat(PixelFormat.RGBA_8888)
+
+            // Listen directly to preferences for instant, in-process configuration updates
+            try {
+                Prefs.getPreferences(applicationContext)
+                    .registerOnSharedPreferenceChangeListener(this)
+            } catch (e: Exception) {
+                // Ignore
+            }
+
             val filter = IntentFilter(ACTION_UPDATE)
             if (Build.VERSION.SDK_INT >= 33) {
                 registerReceiver(updateReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
@@ -42,10 +52,20 @@ class JinseiWallpaperService : WallpaperService() {
         override fun onDestroy() {
             super.onDestroy()
             try {
+                Prefs.getPreferences(applicationContext)
+                    .unregisterOnSharedPreferenceChangeListener(this)
+            } catch (e: Exception) {
+                // Ignore
+            }
+            try {
                 unregisterReceiver(updateReceiver)
             } catch (e: Exception) {
                 // Ignore
             }
+        }
+
+        override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
+            drawFrame()
         }
 
         override fun onSurfaceChanged(holder: SurfaceHolder, format: Int, w: Int, h: Int) {
@@ -58,11 +78,8 @@ class JinseiWallpaperService : WallpaperService() {
         override fun onVisibilityChanged(visible: Boolean) {
             super.onVisibilityChanged(visible)
             if (visible) {
-                // Check if midnight passed; update dots seamlessly without user intervention
-                val today = LocalDate.now()
-                if (today != lastDrawnDate) {
-                    drawFrame()
-                }
+                // Always render current state when screen wakes up or lock screen is displayed
+                drawFrame()
             }
         }
 
@@ -97,8 +114,10 @@ class JinseiWallpaperService : WallpaperService() {
         const val ACTION_UPDATE = "com.thelifecalendar.app.UPDATE_WALLPAPER"
 
         fun notifyUpdate(context: Context) {
-            context.sendBroadcast(Intent(ACTION_UPDATE))
+            val intent = Intent(ACTION_UPDATE).apply {
+                setPackage(context.packageName)
+            }
+            context.sendBroadcast(intent)
         }
     }
 }
-

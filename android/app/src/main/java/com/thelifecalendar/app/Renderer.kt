@@ -41,11 +41,16 @@ object Renderer {
         val isLight = cfg.theme == Theme.LIGHT
 
         // Plain solid backgrounds (100% flat, zero gradient)
-        // Dark is pure #000000 so OxygenOS lockscreen scrim blends invisibly!
-        val bg = if (isLight) 0xFFFFFFFF.toInt() else 0xFF000000.toInt()
+        // Dark theme: Goal uses rich dark charcoal #121214; Year/Life uses pure black #000000
+        // Light theme: clean pure white #FFFFFF
+        val bg = if (isLight) {
+            0xFFFFFFFF.toInt()
+        } else {
+            if (cfg.mode == Mode.GOAL) 0xFF121214.toInt() else 0xFF000000.toInt()
+        }
         val past = if (isLight) 0xFF000000.toInt() else 0xFFFFFFFF.toInt()
-        val future = if (isLight) 0xFFE0E0E6.toInt() else 0xFF242428.toInt()
-        val futureLife = if (isLight) 0xFFE5E5EB.toInt() else 0xFF1C1C20.toInt()
+        val future = if (isLight) 0xFFE0E0E6.toInt() else 0xFF262628.toInt()
+        val futureLife = if (isLight) 0xFFE5E5EB.toInt() else 0xFF1E1E22.toInt()
         val textColor = if (isLight) 0xFF6E6E73.toInt() else 0xFF8E8E93.toInt()
 
         return when (cfg.mode) {

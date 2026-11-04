@@ -86,16 +86,12 @@ class JinseiWallpaperService : WallpaperService() {
         override fun onComputeColors(): WallpaperColors? {
             if (Build.VERSION.SDK_INT >= 27) {
                 val cfg = Prefs.load(applicationContext)
-                return if (cfg.theme == Theme.LIGHT) {
-                    // Light paper-white background: HINT_SUPPORTS_DARK_TEXT turns the lockscreen clock,
-                    // battery icon, Wi-Fi, and signal dark/black!
-                    val primary = android.graphics.Color.valueOf(0xFFF5F5F7.toInt())
-                    WallpaperColors(primary, null, null, WallpaperColors.HINT_SUPPORTS_DARK_TEXT)
-                } else {
-                    // Dark background: keeps clock and battery icons white
-                    val primary = android.graphics.Color.valueOf(0xFF000000.toInt())
-                    WallpaperColors(primary, null, null, 0)
-                }
+                val today = LocalDate.now()
+                // Render sample bitmap so Android framework natively calculates Palette and Dark Text Hints
+                val sampleBmp = Renderer.render(cfg, 300, 600, today)
+                val colors = WallpaperColors.fromBitmap(sampleBmp)
+                sampleBmp.recycle()
+                return colors
             }
             return null
         }

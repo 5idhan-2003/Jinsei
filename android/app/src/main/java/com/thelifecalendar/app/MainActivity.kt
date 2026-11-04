@@ -360,7 +360,7 @@ fun App() {
             }
         }
 
-        // Primary Action: Apply / Select Jinsei Wallpaper
+        // Primary Action: Directly Apply Wallpaper (Guarantees ColorOS Lock Screen Dark Icons)
         Button(
             enabled = error == null,
             modifier = Modifier
@@ -376,21 +376,36 @@ fun App() {
                 Prefs.save(ctx, cfg)
                 JinseiWallpaperService.notifyUpdate(ctx)
 
-                val intent = Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER).apply {
-                    putExtra(
-                        WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT,
-                        ComponentName(ctx, JinseiWallpaperService::class.java)
-                    )
-                }
                 try {
-                    ctx.startActivity(intent)
-                } catch (e: Exception) {
-                    try {
-                        val fallback = Intent(WallpaperManager.ACTION_LIVE_WALLPAPER_CHOOSER)
-                        ctx.startActivity(fallback)
-                    } catch (e2: Exception) {
+                    val (w, h) = deviceSize(ctx, cfg.device)
+                    val bmp = Renderer.render(cfg, w, h)
+                    val wm = WallpaperManager.getInstance(ctx)
+                    val flag = when (cfg.target) {
+                        Target.LOCK -> WallpaperManager.FLAG_LOCK
+                        Target.HOME -> WallpaperManager.FLAG_SYSTEM
+                        Target.BOTH -> WallpaperManager.FLAG_LOCK or WallpaperManager.FLAG_SYSTEM
+                    }
+                    wm.setBitmap(bmp, null, true, flag)
+                    bmp.recycle()
+                    if (cfg.autoUpdate) {
                         Scheduler.applyNow(ctx, cfg)
-                        Toast.makeText(ctx, "Applied as static wallpaper!", Toast.LENGTH_SHORT).show()
+                    }
+                    Toast.makeText(
+                        ctx,
+                        "Applied to Lock Screen! Status bar icons adapted to black.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                } catch (e: Exception) {
+                    val intent = Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER).apply {
+                        putExtra(
+                            WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT,
+                            ComponentName(ctx, JinseiWallpaperService::class.java)
+                        )
+                    }
+                    try {
+                        ctx.startActivity(intent)
+                    } catch (e2: Exception) {
+                        Toast.makeText(ctx, "Error applying: ${e.message}", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
@@ -403,7 +418,7 @@ fun App() {
             )
         }
 
-        // Secondary Action: Instant Wallpaper Update (Zero Theme Change)
+        // Secondary Action: Live Wallpaper Preview
         Button(
             enabled = error == null,
             modifier = Modifier
@@ -418,15 +433,21 @@ fun App() {
             onClick = {
                 Prefs.save(ctx, cfg)
                 JinseiWallpaperService.notifyUpdate(ctx)
-                Toast.makeText(
-                    ctx,
-                    "Wallpaper updated! (Phone theme untouched)",
-                    Toast.LENGTH_SHORT
-                ).show()
+                val intent = Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER).apply {
+                    putExtra(
+                        WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT,
+                        ComponentName(ctx, JinseiWallpaperService::class.java)
+                    )
+                }
+                try {
+                    ctx.startActivity(intent)
+                } catch (e: Exception) {
+                    Toast.makeText(ctx, "Live wallpaper not available", Toast.LENGTH_SHORT).show()
+                }
             }
         ) {
             Text(
-                "Refresh Wallpaper",
+                "Open Live Wallpaper Preview",
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 14.sp,
                 textAlign = TextAlign.Center
@@ -435,7 +456,7 @@ fun App() {
 
         // Explanation Tip
         Text(
-            "ColorOS 17 Tip: Tap 'Apply to Lock Screen' to set the live wallpaper once. From then on, any changes update automatically—tap 'Refresh Wallpaper' or lock/unlock your phone to see updates without ever resetting your system theme or widgets.",
+            "ColorOS 17 Tip: Tap 'Apply to Lock Screen' to apply the wallpaper. ColorOS directly analyzes the background and adapts the lockscreen clock, battery icon, and status bar to dark/black.",
             style = MaterialTheme.typography.bodySmall,
             color = Color(0xFF636366),
             lineHeight = 16.sp,

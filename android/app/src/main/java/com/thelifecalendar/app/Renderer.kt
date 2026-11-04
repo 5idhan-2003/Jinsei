@@ -42,15 +42,15 @@ object Renderer {
 
         // Plain solid backgrounds (100% flat, zero gradient)
         // Dark theme: Goal uses rich dark charcoal #121214; Year/Life uses pure black #000000
-        // Light theme: clean pure white #FFFFFF
+        // Light theme: soft minimalist paper white #F5F5F7, velvety charcoal past dots #1C1C1E
         val bg = if (isLight) {
-            0xFFFFFFFF.toInt()
+            0xFFF5F5F7.toInt()
         } else {
             if (cfg.mode == Mode.GOAL) 0xFF121214.toInt() else 0xFF000000.toInt()
         }
-        val past = if (isLight) 0xFF000000.toInt() else 0xFFFFFFFF.toInt()
-        val future = if (isLight) 0xFFE0E0E6.toInt() else 0xFF262628.toInt()
-        val futureLife = if (isLight) 0xFFE5E5EB.toInt() else 0xFF1E1E22.toInt()
+        val past = if (isLight) 0xFF1C1C1E.toInt() else 0xFFFFFFFF.toInt()
+        val future = if (isLight) 0xFFD1D1D6.toInt() else 0xFF262628.toInt()
+        val futureLife = if (isLight) 0xFFD8D8DC.toInt() else 0xFF1E1E22.toInt()
         val textColor = if (isLight) 0xFF6E6E73.toInt() else 0xFF8E8E93.toInt()
 
         return when (cfg.mode) {

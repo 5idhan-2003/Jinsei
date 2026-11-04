@@ -56,10 +56,10 @@ function stats(total, idx, unit) {
 function buildSpec(o, today) {
   const isLight = o.theme === 'light';
   // Plain solid flat backgrounds - zero gradients
-  const bg = isLight ? '#FFFFFF' : '#000000';
-  const past = isLight ? '#000000' : '#FFFFFF';
-  const future = isLight ? '#E0E0E6' : '#242428';
-  const futureLife = isLight ? '#E5E5EB' : '#1C1C20';
+  const bg = isLight ? '#F5F5F7' : (o.type === 'goal' ? '#121214' : '#000000');
+  const past = isLight ? '#1C1C1E' : '#FFFFFF';
+  const future = isLight ? '#D1D1D6' : '#242428';
+  const futureLife = isLight ? '#D8D8DC' : '#1C1C20';
   const textColor = isLight ? '#6E6E73' : '#8E8E93';
 
   const todayDate = new Date(today);
